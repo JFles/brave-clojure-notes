@@ -252,3 +252,43 @@ error-message
 
 ;; ‼️ Note that using `get` to test whether a set contains nil always returns nil
 ;; so it would be a better option to use `contains?` when testing for set membership
+
+
+;;;
+;;; `Simplicity`
+;;;
+
+;; Clojure encourages us to reach for builtin data structures before classes and structs like with OO.
+;; This communicates that data does not need to be tightly bundled with a class for it to be useful.
+
+;; A popular epigram amongst Clojurists that hints at this philosophy is:
+;; "It is better to have 100 functions operate on one data structure than 10 functions on 10 data structures."
+;;   -- Alan Perlis
+
+;; ‼️ Keep an eye out for ways to gain code reusability by sticking to basic data structures
+
+
+;;;
+;;; `Functions`
+;;;
+
+;; Lisps allow us to build programs that behave in complex ways, yet the primary building block
+;; the `function`, is so simple
+
+;;;
+;;; `Calling` `Functions`
+;;;
+
+;; simple example
+(+ 1 2 3 4)
+(* 1 2 3 4)
+(first [1 2 3 4])
+
+;; funcs that either take a func as an arg or return a func are called `higher-order` `functions`.
+;; Languages with higher-order funcs are said to support `first-class` `functions` b/c funcs can be
+;; treated like values in the same way as nums or vecs
+;;
+;; For ex, the `map` func creates a new list by applying a func to each member of a coll
+(inc 1.1) ;; inc arg by 1
+(map inc [0 1 2 3]) ;; inc each val in coll by 1
+(map inc '(0 1 2 3)) ;; and same result with a list
