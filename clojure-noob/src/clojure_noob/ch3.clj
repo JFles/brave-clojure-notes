@@ -534,3 +534,112 @@ error-message
 ;; We then call `symmetrize-body-parts` on `asym-hobbit-body-parts
 ;; to get a fully symmetrical hobbit
 (symmetrize-body-parts asym-hobbit-body-parts)
+
+;;;
+;;; `Breaking` `it` `all` `down`
+;;;
+
+;;;
+;;; `let`
+;;;
+
+;; `let` binds names to vals
+(let [x 3]
+  x)
+
+(def dalmatian-list
+  ["Pongo" "Perdita" "Puppy 1" "Puppy 2"])
+(let [dalmatians (take 2 dalmatian-list)]
+  dalmatians)
+
+;; `let` also introduces a new scope
+(def x 0) ;; => x = 0 in the global context
+(let [x 1] x) ;; => x = 1 in the context of this `let` exp
+
+;; can ref existing bindings in the `let` binding
+(def y 0)
+(let [y (inc y)] y)
+
+;; can also use rest params like in funcs
+(let [[pongo & dalmatians] dalmatian-list] ;; same destructuring rules 👍
+  [pongo dalmatians])
+
+;; `let` forms have two main uses
+;; 1) Provides clarity by allowing things to be named
+;; 2) Allows us to eval an exp only once and store the result
+;;    - Good for expensive ops like network calls
+
+
+;;;
+;;; `loop`
+;;;
+
+;; `loop` provides us another way to do recursion in Clojure
+(loop [iteration 0]
+  (println (str "Iteration " iteration))
+  (if (> iteration 3)
+    (println "Goodbye")
+    (recur (inc iteration))))
+
+;; We could achieve the same behavior (with worse performance) using a normal func def 💩
+(defn recursive-printer
+  "Recursive alternative to using a `loop` special form.
+  Strictly as a learning example as this is less performant than `loop`"
+  ([]
+   (recursive-printer 0))
+  ([iteration]
+   (println iteration)
+   (if (> iteration 3)
+     (println "Goodbye!")
+     (recursive-printer (inc iteration)))))
+
+(recursive-printer)
+
+
+;;;
+;;; `Regular` `Expressions`
+;;;
+
+;; The literal notation for a regular expression in Clojure
+#"regular-expression"
+
+;; some examples
+(re-find #"^left-" "left-eye") ;; => "left-"
+(re-find #"^left-" "cleft-chin") ;; => nil
+(re-find #"^left-" "wongleblart") ;; => nil
+
+
+;;;
+;;; `Symmetrizer`
+;;;
+
+;; `symmetrize-body-parts` employs a common strategy in functional programming.
+;; Given a seq, the func cont splits the seq into a `head` and a `tail`
+;; It then processes the `head`, adds it to some result
+;; then uses recursion to repeat the process with `tail`
+(defn symmetrize-body-parts
+  "Expects a seq of maps that have a `:name` and `:size`"
+  [asym-body-parts]
+  (loop [remaining-asym-parts asym-body-parts
+         final-body-parts []]
+    (if (empty? remaining-asym-parts)
+      final-body-parts
+      (let [[part & remaining] remaining-asym-parts]
+        (recur remaining
+               (into final-body-parts
+                     (set [part (matching-part part)])))))))
+
+
+;;;
+;;; `Better` `Symmetrizer` `with` `reduce`
+;;;
+
+;; The pattern of "process each el in a seq and build a result" is so common that
+;; there's a built-in func for it called `reduce`
+(reduce + [1 2 3 4]) ;; => 10
+
+;; which is functionally equivalent to
+(+ (+ (+ 1 2) 3) 4) ;; => 10 🥴
+
+;; `reduce` also takes an optional initial value
+(reduce + 15 [1 2 3 4]) ;; => 25
