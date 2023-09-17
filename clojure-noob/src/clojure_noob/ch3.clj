@@ -236,13 +236,15 @@ error-message
 (contains? #{:a :b} :a) ;; true
 (contains? #{:a :b} 3) ;; false
 (contains? #{nil} nil) ;; true
+(contains? #{} nil) ;; false
 
-;; `get`
+
+;; `get` works with `sets`
 (get #{:a :b} :a) ;; :a
 (get #{:a nil} nil) ;; nil
 (get #{:a :b} "kurt vonnegut") ;; nil
 
-;; and `keyword` func
+;; and `keyword` func equivalent
 (:a #{:a :b})
 
 ;; ‼️ Note that using `get` to test whether a set contains nil always returns nil
@@ -253,7 +255,7 @@ error-message
 ;;; `Simplicity`
 ;;;
 
-;; Clojure encourages us to reach for builtin data structures before classes and structs like with OO.
+;; Clojure encourages us to reach for built-in data structures before classes and structs like with OO.
 ;; This communicates that data does not need to be tightly bundled with a class for it to be useful.
 
 ;; A popular epigram amongst Clojurists that hints at this philosophy is:
@@ -643,3 +645,139 @@ error-message
 
 ;; `reduce` also takes an optional initial value
 (reduce + 15 [1 2 3 4]) ;; => 25
+
+;; Can also use `reduce` to return an even larger coll than the one we start with
+;; which is what we want to do with `symmetrize-body-parts`
+
+;; `reduce` abstracts the task "process a collection and build a result" which
+;; is agnostic about the type of result returned
+
+;; Here's one way we could implement it
+(defn my-reduce
+  ([f initial coll]
+   (loop [result initial
+          remaining coll]
+     (if (empty? remaining)
+       result
+       (recur (f result (first remaining)) (rest remaining)))))
+  ([f [head & tail]]
+    (my-reduce f head tail)))
+
+;; which would allow us to reimplement our symmetrizer as follows:
+(defn better-symmetrize-body-parts
+  "Expects a seq of maps that have a :name and :size"
+  [asym-body-parts]
+  (reduce (fn [final-body-parts part]
+            (into final-body-parts (set [part (matching-part part)])))
+          []
+          asym-body-parts))
+
+
+;;;
+;;; `Hobbit` `Violence`
+;;;
+
+;; As a capstone for our work, we'll write a func to determine which part of the hobbit to hit
+(defn hit
+  [asym-body-parts]
+  (let [sym-parts (better-symmetrize-body-parts asym-body-parts) ;; create list of sym body parts
+        body-part-size-sum (reduce + (map :size sym-parts)) ;; find sum of all body patr sizes
+        target (rand body-part-size-sum)] ;; select a random number for our target
+    (loop [[part & remaining] sym-parts ;; decompose head & tail to process head
+           accumulated-size (:size part)] ;; running sum of `head` el processed
+      (if (> accumulated-size target) ;; once our running sum is larger than target, we're in that body part's range, and we've found our target body part
+        part ;; return our target part
+        (recur remaining (+ accumulated-size (:size (first remaining)))))))) ;; else loop with tail and the new `sum` for sizes to process against the next `head`
+
+;; And an example of a random hit
+(hit asym-hobbit-body-parts)
+
+
+;;;
+;;; `Summary`
+;;;
+
+;; This chapter focuses on how `do` `stuff` with Clojure
+;;
+;; We've gone through how to represent information using `strings`, `numbers`, `maps`,
+;; `keywords`, `vectors`, `lists`, and `sets`,and we've learned how to name these
+;; representations with `def` and `let`
+;;
+;; We have also learned how flexible functions are and how to create our own funcs.
+;;
+;; We've also been introduced to Clojure's philosophy of simplicity including its uniform
+;; syntax and emphasis on using large libraries of funcs on primitive data types.
+;;
+;; Ch 4 focuses on a detailed examination of Clojure's core functions
+;;
+;; Ch 5 explains the functional programming mindset
+;;
+;; This chapter has shownn us how to write Clojure code.
+;; The next two chapters will show us how to write clojure code well
+;;
+;; In order to solidify what we've learned, we -have- to start writing code.
+;; There is no better way to solidify our Clojure knowledge.
+;;
+;; The Clojure Cheatsheet is a great reference `http://clojure.org/cheatsheet/`
+;;
+;; Complete the exercises in the next section to tickle our brain.
+;;
+;; To test our knowledge even further, try sokme Project Euler challenges `http://www.projecteuler.net/`
+;; or get back to 4Clojure problems `https://4clojure.oxal.org/`
+
+
+;;;
+;;; `Exercises`
+;;;
+
+;; First 3 exercises can be completed with info from only this chapter
+;;
+;; Second 3 exercises will require using funcs not yet covered. If they're too hard,
+;; revisit them after completing ch 4 and 5
+
+;; 1. Use the `str`, `vector`, `list`, `hash-map`, and `hash-set` functions
+(str "This " "is " "a " "string")
+(vector 1 2 3)
+(list 1 2 3)
+(hash-map :a 1 :b 2 :c 3)
+(hash-set 1 2 3)
+
+;; 2. Write a func that takes a num and adds 100 to it
+(defn add100
+  [num]
+  (+ num 100))
+(add100 25)
+
+;; 3. Write a func `dec-maker` that works exactly like `inc-maker` except with subtraction
+(defn dec-maker
+  [decrement]
+  #(- % decrement))
+(def dec9 (dec-maker 9))
+(dec9 10)
+
+;; 4. Write a func, `mapset`, that works like `map` except the return val is a `set`
+(defn mapset
+  "functions like `map` but returns a set"
+  ([f] ;; `map` returns a transducer for this case. Beyond my understanding
+   (set (map f)))
+  ([f coll] ;; simplest case
+   (set (map f coll)))
+  ([f c1 c2]
+   (set (map f c1 c2)))
+  ([f c1 c2 c3]
+   (set (map f c1 c2 c3)))
+  ([f c1 c2 c3 & colls]
+   (set (map f c1 c2 c3 colls))))
+
+(map #(+ % 1) [1 1 2 2 3 3])
+(mapset #(+ % 1) [1 1 2 2 3 3])
+
+;; 5. Create a function that’s similar to symmetrize-body-parts except that it has to
+;; work with weird space aliens with radial symmetry. Instead of two eyes, arms, legs,
+;; and so on, they have five.
+
+;; 6. Create a function that generalizes symmetrize-body-parts and the function you
+;; created in Exercise 5. The new function should take a collection of body parts and
+;; the number of matching body parts to add. If you’re completely new to Lisp languages
+;; and functional programming, it probably won’t be obvious how to do this. If you
+;; get stuck, just move on to the next chapter and revisit the problem later.”
